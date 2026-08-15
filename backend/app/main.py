@@ -8,6 +8,7 @@ from fastapi import UploadFile, File
 from pypdf import PdfReader
 import docx
 import io
+from app.ai_client import extract_skills
 
 app = FastAPI()
 from app.database import Base, engine
@@ -56,7 +57,9 @@ async def upload_resume(file: UploadFile = File(...)):
     else:
         return {"error": "Unsupported file type. Please upload a .docx or .pdf file."}
 
+    skills = extract_skills(extracted_text)
+
     return {
         "filename": file.filename,
-        "extracted_text": extracted_text
+        "extracted_skills": skills
     }
