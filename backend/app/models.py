@@ -13,3 +13,10 @@ class Opportunity(Base):
     deadline = Column(Date, nullable=True)
     url = Column(String, nullable=True)
     fetched_at = Column(DateTime(timezone=True), server_default=func.now())
+class Resume(Base):
+    __tablename__ = "resumes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    filename = Column(String, nullable=False)
+    extracted_skills = Column(ARRAY(String))
+    uploaded_at = Column(DateTime(timezone=True), server_default=func.now())

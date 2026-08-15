@@ -39,8 +39,8 @@ def create_opportunity(opportunity: schemas.OpportunityCreate, db: Session = Dep
 @app.get("/opportunities", response_model=list[schemas.OpportunityResponse])
 def get_opportunities(db: Session = Depends(get_db)):
     return db.query(models.Opportunity).all()
-@app.post("/resume/upload")
-async def upload_resume(file: UploadFile = File(...)):
+@app.post("/resume/upload", response_model=schemas.ResumeResponse)
+async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_db)):
     contents = await file.read()
     filename = file.filename.lower()
 
@@ -59,7 +59,12 @@ async def upload_resume(file: UploadFile = File(...)):
 
     skills = extract_skills(extracted_text)
 
-    return {
-        "filename": file.filename,
-        "extracted_skills": skills
-    }
+    new_resume = models.Resume(filename=file.filename, extracted_skills=skills)
+    db.add(new_resume)
+    db.commit()
+    db.refresh(new_resume)
+
+    return new_resume
+@app.get("/resumes", response_model=list[schemas.ResumeResponse])
+def get_resumes(db: Session = Depends(get_db)):
+    return db.query(models.Resume).all()
