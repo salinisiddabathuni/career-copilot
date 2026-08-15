@@ -68,3 +68,40 @@ async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_
 @app.get("/resumes", response_model=list[schemas.ResumeResponse])
 def get_resumes(db: Session = Depends(get_db)):
     return db.query(models.Resume).all()
+@app.get("/gap-analysis/{resume_id}")
+def gap_analysis(resume_id: int, db: Session = Depends(get_db)):
+    resume = db.query(models.Resume).filter(models.Resume.id == resume_id).first()
+    if not resume:
+        return {"error": "Resume not found"}
+
+    resume_skills = set(s.lower() for s in resume.extracted_skills)
+    opportunities = db.query(models.Opportunity).all()
+
+    results = []
+    for opp in opportunities:
+        required = set(s.lower() for s in (opp.skills_required or []))
+        if not required:
+            continue
+
+        matched = required & resume_skills
+        missing = required - resume_skills
+        match_score = round(len(matched) / len(required) * 100) if required else 0
+
+        results.append({
+            "opportunity_id": opp.id,
+            "title": opp.title,
+            "type": opp.type,
+            "match_score": match_score,
+            "matched_skills": sorted(matched),
+            "missing_skills": sorted(missing),
+            "deadline": opp.deadline,
+            "url": opp.url
+        })
+
+    results.sort(key=lambda x: x["match_score"], reverse=True)
+
+    return {
+        "resume_id": resume.id,
+        "resume_filename": resume.filename,
+        "results": results
+    }
