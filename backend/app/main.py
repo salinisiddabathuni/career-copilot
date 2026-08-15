@@ -4,6 +4,10 @@ from app.database import get_db
 from app import schemas, models
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import UploadFile, File
+from pypdf import PdfReader
+import docx
+import io
 
 app = FastAPI()
 from app.database import Base, engine
@@ -34,3 +38,25 @@ def create_opportunity(opportunity: schemas.OpportunityCreate, db: Session = Dep
 @app.get("/opportunities", response_model=list[schemas.OpportunityResponse])
 def get_opportunities(db: Session = Depends(get_db)):
     return db.query(models.Opportunity).all()
+@app.post("/resume/upload")
+async def upload_resume(file: UploadFile = File(...)):
+    contents = await file.read()
+    filename = file.filename.lower()
+
+    if filename.endswith(".docx"):
+        doc = docx.Document(io.BytesIO(contents))
+        full_text = [p.text for p in doc.paragraphs if p.text.strip()]
+        extracted_text = "\n".join(full_text)
+
+    elif filename.endswith(".pdf"):
+        reader = PdfReader(io.BytesIO(contents))
+        full_text = [page.extract_text() for page in reader.pages if page.extract_text()]
+        extracted_text = "\n".join(full_text)
+
+    else:
+        return {"error": "Unsupported file type. Please upload a .docx or .pdf file."}
+
+    return {
+        "filename": file.filename,
+        "extracted_text": extracted_text
+    }
