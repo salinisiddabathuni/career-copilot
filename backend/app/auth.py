@@ -7,7 +7,10 @@ def require_user(request: Request) -> str:
         request,
         AuthenticateRequestOptions(
             secret_key=os.environ["CLERK_SECRET_KEY"],
-            authorized_parties=["http://localhost:3000"],
+            authorized_parties=[
+                "http://localhost:3000",
+                "https://career-copilot-olive.vercel.app",
+            ],
             accepts_token=["session_token"],
         ),
     )
