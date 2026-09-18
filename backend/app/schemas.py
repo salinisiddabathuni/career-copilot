@@ -18,6 +18,7 @@ class OpportunityResponse(OpportunityCreate):
         from_attributes = True
 class ResumeResponse(BaseModel):
     id: int
+    clerk_user_id: str
     filename: str
     extracted_skills: List[str]
     uploaded_at: datetime

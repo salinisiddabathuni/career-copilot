@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@clerk/nextjs";
 
 export default function Home() {
+  const { getToken, isSignedIn } = useAuth();
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [resumeId, setResumeId] = useState<number | null>(null);
@@ -12,28 +14,46 @@ export default function Home() {
 
   const handleUpload = async () => {
     if (!file) return;
+
+    if (!isSignedIn) {
+      setError("Please sign in first to upload a resume.");
+      return;
+    }
+
     setUploading(true);
     setError("");
 
+    const token = await getToken();
     const formData = new FormData();
     formData.append("file", file);
 
     try {
       const res = await fetch("http://127.0.0.1:8000/resume/upload", {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
       const data = await res.json();
 
-      if (data.error) {
-        setError(data.error);
-      } else {
-        setResumeId(data.id);
-        setSkills(data.extracted_skills);
+      if (!res.ok) {
+        setError(data.detail || data.error || "Upload failed. Please try again.");
+        return;
+      }
 
-        const gapRes = await fetch(`http://127.0.0.1:8000/gap-analysis/${data.id}`);
-        const gapData = await gapRes.json();
-        setGapResults(gapData.results);
+      setResumeId(data.id);
+      setSkills(data.extracted_skills || []);
+
+      const gapRes = await fetch(`http://127.0.0.1:8000/gap-analysis/${data.id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const gapData = await gapRes.json();
+
+      if (gapRes.ok) {
+        setGapResults(gapData.results || []);
       }
     } catch (err) {
       setError("Could not reach the backend. Is it running?");

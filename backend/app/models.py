@@ -17,6 +17,7 @@ class Resume(Base):
     __tablename__ = "resumes"
 
     id = Column(Integer, primary_key=True, index=True)
+    clerk_user_id = Column(String, nullable=False, index=True)
     filename = Column(String, nullable=False)
     extracted_skills = Column(ARRAY(String))
     uploaded_at = Column(DateTime(timezone=True), server_default=func.now())

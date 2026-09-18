@@ -8,6 +8,7 @@ from fastapi import UploadFile, File
 from pypdf import PdfReader
 import docx
 import io
+from app.auth import require_user
 from app.ai_client import extract_skills
 
 app = FastAPI()
@@ -40,7 +41,11 @@ def create_opportunity(opportunity: schemas.OpportunityCreate, db: Session = Dep
 def get_opportunities(db: Session = Depends(get_db)):
     return db.query(models.Opportunity).all()
 @app.post("/resume/upload", response_model=schemas.ResumeResponse)
-async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_resume(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(require_user),
+):
     contents = await file.read()
     filename = file.filename.lower()
 
@@ -48,26 +53,25 @@ async def upload_resume(file: UploadFile = File(...), db: Session = Depends(get_
         doc = docx.Document(io.BytesIO(contents))
         full_text = [p.text for p in doc.paragraphs if p.text.strip()]
         extracted_text = "\n".join(full_text)
-
     elif filename.endswith(".pdf"):
         reader = PdfReader(io.BytesIO(contents))
         full_text = [page.extract_text() for page in reader.pages if page.extract_text()]
         extracted_text = "\n".join(full_text)
-
     else:
         return {"error": "Unsupported file type. Please upload a .docx or .pdf file."}
 
     skills = extract_skills(extracted_text)
 
-    new_resume = models.Resume(filename=file.filename, extracted_skills=skills)
+    new_resume = models.Resume(filename=file.filename, extracted_skills=skills, clerk_user_id=user_id)
     db.add(new_resume)
     db.commit()
     db.refresh(new_resume)
 
     return new_resume
+
 @app.get("/resumes", response_model=list[schemas.ResumeResponse])
-def get_resumes(db: Session = Depends(get_db)):
-    return db.query(models.Resume).all()
+def get_resumes(db: Session = Depends(get_db), user_id: str = Depends(require_user)):
+    return db.query(models.Resume).filter(models.Resume.clerk_user_id == user_id).all()
 @app.get("/gap-analysis/{resume_id}")
 def gap_analysis(resume_id: int, db: Session = Depends(get_db)):
     resume = db.query(models.Resume).filter(models.Resume.id == resume_id).first()
