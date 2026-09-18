@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# Career Copilot
 
-First, run the development server:
+A full-stack, AI-powered career readiness platform that matches a student's actual resume against real hackathon and internship opportunities — surfacing exactly which skills to build next, not just generic advice.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+![Career Copilot Dashboard](../screenshots/Upload.png)
+
+## Why this exists
+
+Most "AI career advice" tools generate a one-time, generic roadmap. Career Copilot instead does live, resume-grounded gap analysis: upload a resume, and get back a ranked list of real opportunities, each showing exactly which required skills you already have and which you're missing — closing the gap between "what should I learn" and "why."
+
+## Features
+
+- **Resume upload & AI skill extraction** — parses PDF/DOCX resumes and extracts a clean, structured skill list using Google's Gemini API
+- **Live opportunity matching** — computes a match score between a resume and a database of hackathons/internships, using real skill-overlap logic (not just keyword search)
+- **Gap analysis** — for each opportunity, shows exactly which skills you have and which you're missing, ranked by fit
+- **Authentication** — full user accounts via Clerk, with backend-verified sessions (JWT-based), so each user's resumes are private and isolated
+- **Persistent storage** — PostgreSQL (hosted on Neon) backs all resume and opportunity data
+
+![Extract the skills based on resume uploaded](../screenshots/ResumeAnalysis.png)
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js, TypeScript, Tailwind CSS |
+| Backend | FastAPI (Python) |
+| Database | PostgreSQL (Neon) via SQLAlchemy |
+| AI | Google Gemini API (skill extraction) |
+| Auth | Clerk (frontend SDK + backend JWT verification) |
+
+## Architecture
+
+```mermaid
+graph LR
+    A[Next.js Frontend] -->|REST + JWT| B[FastAPI Backend]
+    B -->|SQLAlchemy| C[(PostgreSQL / Neon)]
+    A -->|Session Token| D[Clerk Auth]
+    B -->|Verify Token| D
+    B -->|Skill Extraction| E[Google Gemini API]
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+**Request flow example (resume upload):**
+1. User uploads a resume via the Next.js frontend
+2. Frontend attaches the user's Clerk session token and sends the file to FastAPI
+3. FastAPI verifies the token, extracts raw text from the PDF/DOCX, and sends it to Gemini for structured skill extraction
+4. Extracted skills are saved to PostgreSQL, scoped to that user
+5. A second request computes gap analysis by comparing the saved skills against all seeded opportunities
+6. Results are returned and rendered as ranked, color-coded opportunity cards
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+![Skill gap detetcted for oppurtunity](../screenshots/SkillGap.png)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Running locally
 
-## Learn More
+**Backend:**
+```bash
+cd backend
+python -m venv venv
+venv\Scripts\activate  # Windows
+pip install -r requirements.txt
+uvicorn app.main:app --reload
+```
 
-To learn more about Next.js, take a look at the following resources:
+**Frontend:**
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Both need their own `.env` / `.env.local` files with database, Gemini, and Clerk credentials (see `.env.example` — not committed for security).
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Current status & roadmap
 
-## Deploy on Vercel
+This is a working prototype with seeded opportunity data (real hackathons/internships collected manually), demonstrating the full pipeline end-to-end. Planned next steps:
+- Live data ingestion from hackathon/internship platforms via scheduled scraping
+- Expanded opportunity sources beyond the current seed set
+- Production deployment with live Clerk keys
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+![Demo](../screenshots/demo.gif)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## What I learned building this
+
+Real debugging experience across the stack: stale database connections under Neon's idle timeout (fixed via SQLAlchemy connection pre-pinging), breaking API changes in both Clerk (Core 3 component migration) and Gemini (model deprecation), and CORS/auth configuration across a multi-service deployment (Vercel + Railway + Neon).
