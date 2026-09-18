@@ -1,5 +1,65 @@
 @import "tailwindcss";
+:root {
+  --bg: #0F1420;
+  --surface: #171E2E;
+  --border: #2A3350;
+  --text: #E9ECF5;
+  --text-muted: #8B93A7;
+  --accent: #E8A33D;
+  --good: #4ADE80;
+  --missing: #F0665A;
+}
 
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body), sans-serif;
+}
+
+.font-display {
+  font-family: var(--font-display), sans-serif;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  margin: 0.15rem 0.3rem 0.15rem 0;
+}
+.chip-good { background: rgba(74, 222, 128, 0.12); color: var(--good); }
+.chip-missing { background: rgba(240, 102, 90, 0.12); color: var(--missing); }
+
+.opp-row {
+  border-left: 3px solid var(--border);
+  padding: 1.1rem 1.4rem;
+  margin-bottom: 1rem;
+  background: var(--surface);
+  border-radius: 4px;
+}
+.opp-row.tier-high { border-left-color: var(--accent); }
+.opp-row.tier-mid { border-left-color: #5B7CFA; }
+.opp-row.tier-low { border-left-color: var(--border); }
+
+.meter {
+  width: 100%;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  margin: 0.5rem 0 0.8rem;
+  overflow: hidden;
+}
+.meter-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.upload-console {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 1.5rem;
+  background: var(--surface);
+}
 :root {
   --background: #ffffff;
   --foreground: #171717;
