@@ -8,6 +8,7 @@ export default function Home() {
   const [resumeId, setResumeId] = useState<number | null>(null);
   const [skills, setSkills] = useState<string[]>([]);
   const [error, setError] = useState("");
+  const [gapResults, setGapResults] = useState<any[]>([]);
 
   const handleUpload = async () => {
     if (!file) return;
@@ -29,6 +30,10 @@ export default function Home() {
       } else {
         setResumeId(data.id);
         setSkills(data.extracted_skills);
+
+        const gapRes = await fetch(`http://127.0.0.1:8000/gap-analysis/${data.id}`);
+        const gapData = await gapRes.json();
+        setGapResults(gapData.results);
       }
     } catch (err) {
       setError("Could not reach the backend. Is it running?");
@@ -62,6 +67,30 @@ export default function Home() {
               <li key={i}>{skill}</li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {gapResults.length > 0 && (
+        <div style={{ marginTop: "2rem" }}>
+          <h2>Recommended Opportunities</h2>
+          {gapResults.map((opp) => (
+            <div
+              key={opp.opportunity_id}
+              style={{
+                border: "1px solid #444",
+                borderRadius: "8px",
+                padding: "1rem",
+                marginBottom: "1rem",
+              }}
+            >
+              <h3>{opp.title} ({opp.type})</h3>
+              <p>Match: {opp.match_score}%</p>
+              <p>✅ You have: {opp.matched_skills.join(", ") || "none"}</p>
+              <p>❌ Missing: {opp.missing_skills.join(", ") || "none"}</p>
+              <p>Deadline: {opp.deadline}</p>
+              <a href={opp.url} target="_blank" rel="noopener noreferrer">View opportunity</a>
+            </div>
+          ))}
         </div>
       )}
     </main>
