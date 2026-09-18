@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@clerk/nextjs";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function Home() {
   const { getToken, isSignedIn } = useAuth();
@@ -28,7 +29,7 @@ export default function Home() {
     formData.append("file", file);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/resume/upload", {
+      const res = await fetch(`${API_URL}/resume/upload`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -45,7 +46,7 @@ export default function Home() {
       setResumeId(data.id);
       setSkills(data.extracted_skills || []);
 
-      const gapRes = await fetch(`http://127.0.0.1:8000/gap-analysis/${data.id}`, {
+      const gapRes = await fetch(`${API_URL}/gap-analysis/${data.id}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
