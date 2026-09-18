@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
+import { ClerkProvider, Show, SignInButton, UserButton } from '@clerk/nextjs';
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -24,10 +25,18 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" className="h-full">
-      <body
-        className={`${spaceGrotesk.variable} ${inter.variable} min-h-full antialiased`}
-      >
-        {children}
+      <body className={`${spaceGrotesk.variable} ${inter.variable} min-h-full antialiased`}>
+        <ClerkProvider>
+          <header style={{ display: "flex", justifyContent: "flex-end", padding: "1rem 1.5rem" }}>
+            <Show when="signed-out">
+              <SignInButton />
+            </Show>
+            <Show when="signed-in">
+              <UserButton />
+            </Show>
+          </header>
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );
